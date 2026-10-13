@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * data: blob: filesystem:;">
+    <title>MARADA_X | Premium Auth</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* CHUYỂN SANG TÔNG MÀU ĐEN */
+            --bg: #000000;
+            --bg-secondary: #0a0a0a;
+            --blue: #3b82f6;
+            --blue-dark: #1e40af;
+            --blue-light: #60a5fa;
+            --white: #ffffff;
+            --black: #000000;
+            --glass-bg: rgba(255, 255, 255, 0.05); 
+            --glass-blur: blur(40px);
+            --glass-border-light: rgba(255, 255, 255, 0.1);
+            --glass-border-dark: rgba(0, 0, 0, 0.8);
+            --glass-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.8);
+            --glass-inner-light: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --lifetime: #06b6d4;
+            --text: #ffffff;
+            --text-dim: #9ca3af;
+            --font-ui: 'Outfit', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+            --nav-h: 70px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: var(--font-ui); min-height: 100vh; overflow-x: hidden; }
+
+        /* --- VIDEO BACKGROUND --- */
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -2;
+            opacity: 0.15; /* Giảm độ sáng để không làm rối chữ */
+            filter: grayscale(100%) brightness(0.6); /* Làm video thành màu đen trắng mờ */
+            pointer-events: none;
+        }
+
+        /* Lớp phủ đen mờ trên video */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.9) 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Hyper Realistic Glass Utility */
+        .glass { 
+            background: var(--glass-bg); 
+            backdrop-filter: var(--glass-blur); 
+            -webkit-backdrop-filter: var(--glass-blur); 
+            border-top: 1px solid var(--glass-border-light);
+            border-left: 1px solid var(--glass-border-light);
+            border-bottom: 1px solid var(--glass-border-dark);
+            border-right: 1px solid var(--glass-border-dark);
+            box-shadow: var(--glass-shadow), var(--glass-inner-light);
+            border-radius: 20px; 
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ambient subtle reflection */
+        .glass::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.05) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* Sections */
+        .view { display: none !important; padding: 15px 15px calc(var(--nav-h) + 20px) 15px; animation: slideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); visibility: hidden; opacity: 0; position: relative; z-index: 1; }
+        .view.active { display: block !important; visibility: visible; opacity: 1; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Glass Toast Notification */
+        #toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -20px) scale(0.9); background: rgba(59, 130, 246, 0.8); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-top: 1px solid rgba(255,255,255,0.3); border-left: 1px solid rgba(255,255,255,0.3); color: white; padding: 10px 20px; border-radius: 30px; font-weight: 800; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 1000; box-shadow: 0 8px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; white-space: nowrap;}
+        #toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+        /* Login Screen */
+        #v-login { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center; }
+        .login-logo { font-size: 3.5rem; margin-bottom: 15px; color: var(--primary); filter: drop-shadow(0 0 20px var(--primary-glow)); }
+        .db-list { width: 100%; max-width: 400px; margin-top: 25px; display: flex; flex-direction: column; gap: 12px; }
+        .db-card { padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 16px; }
+        .db-card:active { transform: scale(0.95); }
+        .db-card.glass { background: rgba(255, 255, 255, 0.05); }
+
+        /* Navbar */
+        .navbar { position: fixed; bottom: 0; width: 100%; height: var(--nav-h); background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border-top: 1px solid var(--glass-border-light); display: none; justify-content: space-around; align-items: center; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { color: rgba(255,255,255,0.3); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); width: 60px; }
+        .nav-item.active { color: var(--primary); transform: translateY(-3px); }
+        .nav-item i { font-size: 1.3rem; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .nav-item.active i { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--primary-glow)); }
+
+        /* Header & Dashboard Stats */
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header-row h2 { font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; text-shadow: 0 0 15px rgba(255,255,255,0.1); color: var(--white); }
+        
+        .btn-reload { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border-light); color: var(--text); padding: 8px 12px; border-radius: 12px; font-size: 1rem; cursor: pointer; transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); backdrop-filter: blur(10px); }
+        .btn-reload:active { transform: scale(0.85); background: var(--primary); border-color: var(--primary); }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { padding: 15px 10px; text-align: center; border-radius: 18px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .stat-val { font-size: 1.8rem; font-weight: 800; font-family: var(--font-code); text-shadow: 0 0 15px rgba(255,255,255,0.2); line-height: 1; color: var(--blue-light); }
+        
+        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+        .act-btn { padding: 12px 5px; font-size: 0.7rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; color: var(--white) !important; border-radius: 16px; transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .act-btn:active { transform: scale(0.9); background: var(--primary); }
+        .act-btn span { color: var(--white) !important; }
+        .act-btn.disabled { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
+        .act-btn i { font-size: 1.1rem; color: var(--text-dim); }
+
+        /* Controls */
+        .search-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+        .search-wrap { position: relative; flex: 1; }
+        .search-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.9rem; }
+        input, select { width: 100%; padding: 12px 14px; border-radius: 14px; background: rgba(0,0,0,0.6); border-top: 1px solid rgba(255,255,255,0.1); border-left: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(0,0,0,0.6); border-right: 1px solid rgba(0,0,0,0.6); color: var(--white); font-family: var(--font-ui); font-size: 0.9rem; transition: 0.3s; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.6; }
+        input:focus { outline: none; border-top-color: var(--primary); box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 0 15px rgba(59,130,246,0.2); background: rgba(0,0,0,0.7); }
+        .search-wrap input { padding-left: 40px; }
+
+        /* Sleek Mode: Compact Key List */
+        .select-all-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; color: var(--text-dim); margin-bottom: 8px; padding-left: 5px; cursor: pointer; }
+        
+        .key-card { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; transition: 0.2s; position: relative; border-radius: 18px; animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 4px solid #6b7280; }
+        @keyframes popIn { 0% { transform: scale(0.96) translateY(10px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+        .key-card.selected { border-color: var(--primary); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 20px rgba(59,130,246,0.15), inset 0 1px 1px rgba(255,255,255,0.1); }
+        
+        /* Sleek Checkbox */
+        .chk { width: 20px; height: 20px; border: 1px solid rgba(255,255,255,0.3); border-top: 1px solid rgba(255,255,255,0.5); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: 0.2s; background: rgba(0,0,0,0.4); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
+        .chk.active { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+        .chk i { font-size: 0.65rem; color: white; transform: scale(0); transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .chk.active i { transform: scale(1); }
+
+        /* Sleek Row Layout */
+        .key-card-top { display: flex; align-items: center; gap: 10px; width: 100%; }
+        .key-info-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
+        .key-info { flex: 1; min-width: 0; }
+        .key-id { font-weight: 700; font-family: var(--font-code); font-size: 0.85rem; color: var(--blue-light); word-break: break-all; }
+        .key-expiry { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+        .key-hwid { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+        .key-card-icons { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+        .key-card-icons button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; transition: 0.2s; padding: 0; }
+        .key-card-icons button:active { color: var(--primary); transform: scale(1.2); }
+
+        /* Bottom Floating Bar */
+        .floating-bar { position: fixed; bottom: var(--nav-h); left: 15px; right: 15px; display: none; padding: 12px 15px; border-radius: 16px; gap: 10px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.3); z-index: 40; align-items: center; animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .floating-bar.show { display: flex; }
+        .bar-count { flex: 1; font-weight: 700; font-size: 0.9rem; }
+        .bar-actions { display: flex; gap: 8px; }
+        .bar-actions button { padding: 6px 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .bar-actions button.primary { background: var(--primary); color: white; }
+        .bar-actions button.primary:active { transform: scale(0.9); background: var(--blue-dark); }
+        .bar-actions button.secondary { background: rgba(255,0,0,0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .bar-actions button.secondary:active { transform: scale(0.9); background: var(--danger); color: white; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal.active { display: flex; }
+        .modal-content { background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(10, 10, 10, 0.95) 100%); border-radius: 24px; padding: 30px; max-width: 95%; max-height: 85vh; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px rgba(0,0,0,0.9), 0 0 50px rgba(59, 130, 246, 0.1); animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); backdrop-filter: blur(20px); }
+        .modal h3 { margin-bottom: 20px; font-size: 1.4rem; color: var(--white); font-weight: 800; display: flex; align-items: center; gap: 12px; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input, .form-group select { width: 100%; }
+
+        /* Buttons */
+        .btn { padding: 10px 16px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--blue-dark) 100%); color: var(--white); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .btn-primary:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2); }
+        .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--white); border: 1.5px solid rgba(255, 255, 255, 0.2); }
+        .btn-secondary:active { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.4); }
+        .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1.5px solid var(--danger); }
+        .btn-danger:active { background: var(--danger); color: white; }
+
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .form-row > .form-group { flex: 1; margin-bottom: 0; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+    </style>
+</head>
+<body>
+    <!-- VIDEO BACKGROUND -->
+    <!-- Mày có thể thay link video của mày vào đây -->
+    <video id="bg-video" autoplay muted loop playsinline>
+        <source src="https://files.catbox.moe/r9s73c.mp4" type="video/mp4">
+    </video>
+
+    <div class="view active" id="v-login">
+        <div class="login-logo"><i class="fas fa-lock"></i></div>
+        <h2 style="margin-bottom: 8px; color: var(--white); font-weight: 800;">MARADA_X AUTH</h2>
+        <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px;">License Key Management System</p>
+        
+        <div style="width: 100%; max-width: 450px;">
+            <label style="display: block; text-align: left; margin-bottom: 8px; font-weight: 600; color: var(--text-dim); font-size: 0.85rem;"><i class="fas fa-server" style="margin-right: 6px; color: var(--primary);"></i>Firebase Database URL</label>
+            <div class="search-wrap" style="margin-bottom: 15px;">
+                <i class="fas fa-database"></i>
+                <input type="text" id="fbUrl" placeholder="https://project-name.firebaseio.com" style="padding-left: 40px;">
+            </div>
+            <button class="btn btn-primary" style="width: 100%; position: relative; margin-bottom: 10px;" id="connectBtn" onclick="loadDatabase()">
+                <i class="fas fa-arrow-right" style="margin-right: 8px;"></i>
+                <span id="connectBtnText">Connect Database</span>
+                <span id="connectLoader" style="display: none; margin-left: 8px;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
+            </button>
+            <button class="btn btn-secondary" style="width: 100%;" onclick="openAddDatabaseModal()">
+                <i class="fas fa-plus-circle" style="margin-right: 8px;"></i>Add New Database
+            </button>
+        </div>
+
+        <div class="db-list" id="savedDbList" style="display: none; margin-top: 25px;">
+            <div style="text-align: left; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 12px; font-weight: 700;"><i class="fas fa-history" style="margin-right: 6px; color: var(--primary);"></i>Saved Databases:</div>
+            <div id="dbListContainer"></div>
+        </div>
+    </div>
+
+    <div class="view" id="v-dashboard">
+        <div class="header-row">
+            <h2><i class="fas fa-key" style="margin-right: 10px;"></i>License Keys</h2>
+            <button class="btn-reload" onclick="refreshUI()"><i class="fas fa-sync-alt"></i></button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px;">Total Keys</div>
+                <div class="stat-val" id="total-keys">0</div>
+            </div>
+            <div class="stat-box">
+                <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px;">Bound Keys</div>
+                <div class="stat-val" id="bound-keys">0</div>
+            </div>
+        </div>
+
+        <div class="action-grid">
+            <div class="act-btn" onclick="openSingleModal()"><i class="fas fa-plus-circle"></i><span>New</span></div>
+            <div class="act-btn" onclick="openBulkGen()"><i class="fas fa-copy"></i><span>Bulk</span></div>
+            <div class="act-btn" id="btn-edit" onclick="openBulkEdit()" class="disabled"><i class="fas fa-edit"></i><span>Edit <b id="count-e">0</b></span></div>
+            <div class="act-btn" id="btn-del" onclick="deleteSelected()" class="disabled"><i class="fas fa-trash"></i><span>Delete <b id="count-d">0</b></span></div>
+        </div>
+
+        <div class="search-row">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-box" placeholder="Search keys..." onkeyup="filterKeys()">
+            </div>
+        </div>
+
+        <div class="select-all-row" onclick="toggleSelectAll()">
+            <div class="chk" id="chk-all"><i class="fas fa-check"></i></div>
+            <span>Select All</span>
+        </div>
+
+        <div id="keys-container"></div>
+    </div>
+
+    <div class="view" id="v-config">
+        <div class="header-row">
+            <h2><i class="fas fa-cog" style="margin-right: 10px;"></i>Configuration</h2>
+        </div>
+        
+        <div class="form-group">
+            <label>Dialog Title</label>
+            <input type="text" id="cfg-title" placeholder="Enter dialog title">
+        </div>
+        <div class="form-group">
+            <label>Dialog Subtitle</label>
+            <input type="text" id="cfg-subtitle" placeholder="Enter dialog subtitle">
+        </div>
+        <div class="form-group">
+            <label>Admin URL</label>
+            <input type="text" id="cfg-url" placeholder="https://admin.example.com">
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; margin-top: 15px;" onclick="saveConfig()"><i class="fas fa-save" style="margin-right: 8px;"></i> Save Settings</button>
+        
+        <button class="btn btn-danger" style="width: 100%; margin-top: 10px;" onclick="logout()"><i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i> Logout</button>
+    </div>
+
+    <div class="navbar">
+        <div class="nav-item active" onclick="switchView('v-dashboard')"><i class="fas fa-key"></i>Keys</div>
+        <div class="nav-item" onclick="switchView('v-config')"><i class="fas fa-cog"></i>Config</div>
+    </div>
+
+    <div id="toast"></div>
+
+    <!-- MODALS -->
+    <div class="modal" id="m-single-gen">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3><i class="fas fa-key" style="color: var(--primary); font-size: 1.5rem;"></i>Generate Single Key</h3>
+            
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-info-circle" style="color: var(--blue-light); font-size: 1.2rem; flex-shrink: 0;"></i>
+                <span style="color: var(--text-dim); font-size: 0.85rem;">Create a unique license key with custom expiry and HWID binding</span>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-hashtag" style="margin-right: 6px; color: var(--primary);"></i>Key ID</label>
+                <input type="text" id="ms-key" placeholder="e.g., MARADA_X-ABC123" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 14px; font-size: 1rem; letter-spacing: 1px;">
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 15px; margin-bottom: 18px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 700; color: var(--white); margin: 0;">
+                    <input type="checkbox" id="ms-life" style="width: 18px; height: 18px; cursor: pointer;">
+                    <i class="fas fa-infinity" style="color: var(--lifetime);"></i>Lifetime License
+                </label>
+                <span style="font-size: 0.8rem; color: var(--text-dim); margin-top: 6px; display: block; margin-left: 28px;">Key never expires</span>
+            </div>
+
+            <div class="form-group" id="ms-date-group">
+                <label><i class="fas fa-calendar-alt" style="margin-right: 6px; color: var(--primary);"></i>Expiry Date</label>
+                <input type="date" id="ms-date" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px;">
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 25px;">
+                <button class="btn btn-primary" style="flex: 1; padding: 12px;" onclick="generateSingle()">
+                    <i class="fas fa-plus" style="margin-right: 8px;"></i>Generate Key
+                </button>
+                <button class="btn btn-secondary" style="flex: 1; padding: 12px;" onclick="closeModal('m-single-gen')">
+                    <i class="fas fa-times" style="margin-right: 8px;"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="m-add-database">
+        <div class="modal-content" style="max-width: 420px;">
+            <h3 style="margin-bottom: 25px;"><i class="fas fa-plus-circle" style="color: var(--primary); font-size: 1.3rem; margin-right: 10px;"></i>Add Database</h3>
+            
+            <div class="form-group">
+                <label style="font-size: 0.8rem;"><i class="fas fa-tag" style="margin-right: 6px; color: var(--primary);"></i>Name</label>
+                <input type="text" id="add-db-name" placeholder="Production, Testing, etc" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; font-size: 0.9rem;">
+            </div>
+
+            <div class="form-group">
+                <label style="font-size: 0.8rem;"><i class="fas fa-link" style="margin-right: 6px; color: var(--primary);"></i>Database URL</label>
+                <input type="text" id="add-db-url" placeholder="https://project.firebaseio.com" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; font-size: 0.9rem;">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-primary" style="flex: 1; padding: 11px;" onclick="addDatabaseFromModal()">
+                    <i class="fas fa-check" style="margin-right: 6px;"></i>Create
+                </button>
+                <button class="btn btn-secondary" style="flex: 1; padding: 11px;" onclick="closeModal('m-add-database')" id="skip-db-btn">
+                    <i class="fas fa-arrow-right" style="margin-right: 6px;"></i>Skip
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="m-bulk-gen">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3><i class="fas fa-copy" style="color: var(--primary); font-size: 1.5rem;"></i>Bulk Generate Keys</h3>
+            
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-info-circle" style="color: var(--blue-light); font-size: 1.2rem; flex-shrink: 0;"></i>
+                <span style="color: var(--text-dim); font-size: 0.85rem;">Generate multiple keys at once with same settings</span>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-list" style="margin-right: 6px; color: var(--primary);"></i>Quantity</label>
+                    <input type="number" id="mb-amt" placeholder="10" value="10" min="1" max="1000" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px;">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-tag" style="margin-right: 6px; color: var(--primary);"></i>Prefix</label>
+                    <input type="text" id="mb-pre" placeholder="MARADA_X-" value="MARADA_X-" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px;">
+                </div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 15px; margin-bottom: 18px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 700; color: var(--white); margin: 0;">
+                    <input type="checkbox" id="mb-life" style="width: 18px; height: 18px; cursor: pointer;">
+                    <i class="fas fa-infinity" style="color: var(--lifetime);"></i>Lifetime License
+                </label>
+            </div>
+
+            <div class="form-group" id="mb-date-group">
+                <label><i class="fas fa-calendar-alt" style="margin-right: 6px; color: var(--primary);"></i>Expiry Date</label>
+                <input type="date" id="mb-date" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px;">
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 25px;">
+                <button class="btn btn-primary" style="flex: 1; padding: 12px;" onclick="generateBulk()">
+                    <i class="fas fa-check" style="margin-right: 8px;"></i>Generate
+                </button>
+                <button class="btn btn-secondary" style="flex: 1; padding: 12px;" onclick="closeModal('m-bulk-gen')">
+                    <i class="fas fa-times" style="margin-right: 8px;"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="m-edit-key">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 id="edit-target-text"><i class="fas fa-edit" style="color: var(--primary); font-size: 1.5rem; margin-right: 12px;"></i>Edit Key</h3>
+            
+            <div id="edit-hwid-container" style="margin-bottom: 18px;">
+                <div class="form-group">
+                    <label><i class="fas fa-fingerprint" style="margin-right: 6px; color: var(--primary);"></i>HWID Binding (Optional)</label>
+                    <input type="text" id="me-hwid" placeholder="Leave empty to unbind" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px;">
+                    <span style="font-size: 0.8rem; color: var(--text-dim); margin-top: 6px; display: block;">Bind this key to a specific device</span>
+                </div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 15px; margin-bottom: 18px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 700; color: var(--white); margin: 0;">
+                    <input type="checkbox" id="me-life" style="width: 18px; height: 18px; cursor: pointer;">
+                    <i class="fas fa-infinity" style="color: var(--lifetime);"></i>Lifetime License
+                </label>
+            </div>
+
+            <div class="form-group" id="me-date-group">
+                <label><i class="fas fa-calendar-alt" style="margin-right: 6px; color: var(--primary);"></i>Expiry Date</label>
+                <input type="date" id="me-date" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px;">
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 25px;">
+                <button class="btn btn-primary" style="flex: 1; padding: 12px;" onclick="saveEdit()">
+                    <i class="fas fa-save" style="margin-right: 8px;"></i>Save Changes
+                </button>
+                <button class="btn btn-secondary" style="flex: 1; padding: 12px;" onclick="closeModal('m-edit-key')">
+                    <i class="fas fa-times" style="margin-right: 8px;"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let DB = { keys: {}, dialog_config: {} };
+        let CURRENT_URL = "";
+        let SELECTED = new Set();
+        let EDIT_TARGET = null;
+        const STORAGE_KEY = 'firebaseUrls';
+        const STORAGE_DB_NAMES = 'firebaseDbNames';
+
+        function showToast(msg, color = "var(--primary)") {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.background = color.includes('rgb') ? color : `rgba(59, 130, 246, 0.8)`;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        function getSavedDatabases() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        function saveDatabaseUrl(url, name = '') {
+            const saved = getSavedDatabases();
+            if(!saved.includes(url)) {
+                saved.unshift(url);
+                if(saved.length > 10) saved.pop();
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+            }
+            
+            const names = JSON.parse(localStorage.getItem(STORAGE_DB_NAMES) || '{}');
+            if(name) names[url] = name;
+            localStorage.setItem(STORAGE_DB_NAMES, JSON.stringify(names));
+        }
+
+        function removeDatabaseUrl(url) {
+            const saved = getSavedDatabases();
+            const filtered = saved.filter(u => u !== url);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+            
+            const names = JSON.parse(localStorage.getItem(STORAGE_DB_NAMES) || '{}');
+            delete names[url];
+            localStorage.setItem(STORAGE_DB_NAMES, JSON.stringify(names));
+            
+            loadSavedDatabases();
+        }
+
+        function copyKeyToClipboard(keyId, e) {
+            e.stopPropagation();
+            navigator.clipboard.writeText(keyId).then(() => {
+                showToast(' Key Copied!', 'var(--success)');
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = keyId;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast(' Key Copied!', 'var(--success)');
+            });
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(' Copied!', 'var(--success)');
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast(' Copied!', 'var(--success)');
+            });
+        }
+
+        function openAddDatabaseModal() {
+            document.getElementById('add-db-name').value = '';
+            document.getElementById('add-db-url').value = '';
+            openModal('m-add-database');
+        }
+
+        function addDatabaseFromModal() {
+            const url = document.getElementById('add-db-url').value.trim();
+            const name = document.getElementById('add-db-name').value.trim();
+            
+            if(!url) return showToast('URL required bhai', 'var(--danger)');
+            
+            closeModal('m-add-database');
+            
+            saveDatabaseUrl(url, name);
+            loadSavedDatabases();
+            
+            setTimeout(() => {
+                document.getElementById('fbUrl').value = url;
+                loadDatabase();
+            }, 300);
+        }
+
+        function loadSavedDatabases() {
+            const saved = getSavedDatabases();
+            const container = document.getElementById('dbListContainer');
+            const list = document.getElementById('savedDbList');
+            const names = JSON.parse(localStorage.getItem(STORAGE_DB_NAMES) || '{}');
+            
+            if(saved.length === 0) {
+                list.style.display = 'none';
+                return;
+            }
+            
+            list.style.display = 'block';
+            container.innerHTML = saved.map(url => {
+                const dbName = names[url] || url.split('//')[1]?.split('.')[0] || 'Database';
+                
+                return `
+                    <div class="db-card glass" style="justify-content: space-between; padding: 14px 16px; gap: 12px;">
+                        <div style="flex: 1; cursor: pointer; min-width: 0;" onclick="quickLoad('${url}')">
+                            <div style="color: var(--white); font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fas fa-database" style="margin-right: 8px; color: var(--primary);"></i>${dbName}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${url}</div>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                            <button onclick="copyToClipboard('${url}')" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: var(--white); cursor: pointer; font-size: 1rem; padding: 8px 12px; border-radius: 8px; transition: 0.2s;"><i class="fas fa-copy"></i></button>
+                            <button onclick="removeDatabaseUrl('${url}')" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); cursor: pointer; font-size: 1rem; padding: 8px 12px; border-radius: 8px; transition: 0.2s;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setLoading(loading) {
+            const btn = document.getElementById('connectBtn');
+            const text = document.getElementById('connectBtnText');
+            const loader = document.getElementById('connectLoader');
+            
+            if(loading) {
+                btn.disabled = true;
+                text.style.display = 'none';
+                loader.style.display = 'inline';
+            } else {
+                btn.disabled = false;
+                text.style.display = 'inline';
+                loader.style.display = 'none';
+            }
+        }
+
+        function switchView(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.closest('.nav-item').classList.add('active');
+            if(id === 'v-config') loadConfigUI();
+        }
+
+        async function loadDatabase() {
+            const url = document.getElementById('fbUrl').value.trim();
+            if(!url) return showToast('Firebase URL daalo pehle', 'var(--danger)');
+            
+            setLoading(true);
+            CURRENT_URL = url.replace(/\/$/, '');
+            
+            try {
+                const fetchUrl = CURRENT_URL + '/.json?shallow=true';
+                
+                const res = await fetch(fetchUrl, {
+                    method: 'GET',
+                    headers: { 
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                const fullUrl = CURRENT_URL + '/.json';
+                const fullRes = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: { 
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                if(fullRes.status === 404) {
+                    throw new Error('Database nahi milaa - URL check karo');
+                }
+                if(fullRes.status === 403) {
+                    throw new Error('Permission denied - Firebase rules public hone chahiye');
+                }
+                if(!fullRes.ok) {
+                    throw new Error('Error: ' + fullRes.status);
+                }
+                
+                const data = await fullRes.json();
+                
+                if(data && typeof data === 'object') {
+                    if(data.keys) {
+                        DB = data;
+                    } else {
+                        DB = { keys: data, dialog_config: {} };
+                    }
+                } else {
+                    DB = { keys: {}, dialog_config: {} };
+                }
+                
+                saveDatabaseUrl(CURRENT_URL);
+                loadSavedDatabases();
+                
+                const loginView = document.getElementById('v-login');
+                const dashboardView = document.getElementById('v-dashboard');
+                
+                loginView.classList.remove('active');
+                dashboardView.classList.add('active');
+                loginView.style.display = 'none';
+                dashboardView.style.display = 'block';
+                document.querySelector('.navbar').style.display = 'flex';
+                
+                refreshUI();
+                showToast(' Database Connected!', 'var(--success)');
+                
+                return true;
+            } catch(e) {
+                console.error('Database Load Error:', e);
+                
+                try {
+                    const altUrl = CURRENT_URL + '.json';
+                    const altRes = await fetch(altUrl);
+                    const altData = await altRes.json();
+                    
+                    DB = altData && typeof altData === 'object' ? (altData.keys ? altData : { keys: altData, dialog_config: {} }) : { keys: {}, dialog_config: {} };
+                    saveDatabaseUrl(CURRENT_URL);
+                    loadSavedDatabases();
+                    
+                    const loginView = document.getElementById('v-login');
+                    const dashboardView = document.getElementById('v-dashboard');
+                    loginView.classList.remove('active');
+                    dashboardView.classList.add('active');
+                    loginView.style.display = 'none';
+                    dashboardView.style.display = 'block';
+                    document.querySelector('.navbar').style.display = 'flex';
+                    
+                    refreshUI();
+                    showToast(' Connected (Alt Mode)', 'var(--success)');
+                    return true;
+                } catch(altErr) {
+                    showToast('Error: ' + (e.message || 'Connection failed'), 'var(--danger)');
+                    return false;
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function quickLoad(url) {
+            document.getElementById('fbUrl').value = url;
+            loadDatabase();
+        }
+
+        function logout() {
+            if(!confirm('Kya aap logout karna chahte ho?')) return;
+            CURRENT_URL = '';
+            DB = { keys: {}, dialog_config: {} };
+            SELECTED.clear();
+            
+            const loginView = document.getElementById('v-login');
+            const dashboardView = document.getElementById('v-dashboard');
+            
+            dashboardView.classList.remove('active');
+            loginView.classList.add('active');
+            
+            loginView.style.display = 'block';
+            dashboardView.style.display = 'none';
+            
+            document.querySelector('.navbar').style.display = 'none';
+            document.getElementById('fbUrl').value = '';
+            
+            showToast('Logged out successfully', 'var(--success)');
+        }
+
+        function refreshUI() {
+            document.getElementById('total-keys').innerText = Object.keys(DB.keys || {}).length;
+            let bound = 0;
+            for(let k in DB.keys) if(DB.keys[k].hwid) bound++;
+            document.getElementById('bound-keys').innerText = bound;
+            renderKeys();
+            updateActionButtons();
+        }
+
+        function renderKeys() {
+            const container = document.getElementById('keys-container');
+            const search = document.getElementById('search-box').value.toLowerCase();
+            let html = '';
+            
+            for(let id in DB.keys) {
+                if(search && !id.toLowerCase().includes(search)) continue;
+                const key = DB.keys[id];
+                const isSelected = SELECTED.has(id);
+                
+                let statusColor = '#6b7280';
+                let statusText = 'Inactive';
+                let statusIcon = 'fa-circle';
+                
+                if(key.hwid) {
+                    statusColor = '#10b981';
+                    statusText = 'Active';
+                    statusIcon = 'fa-check-circle';
+                } else {
+                    statusColor = '#ef4444';
+                    statusText = 'Inactive';
+                    statusIcon = 'fa-circle-xmark';
+                }
+                
+                html += `
+                    <div class="key-card ${isSelected ? 'selected' : ''}" onclick="toggleSelect('${id}')" style="border-left: 4px solid ${statusColor};">
+                        <div class="key-card-top">
+                            <div class="chk ${isSelected ? 'active' : ''}"><i class="fas fa-check"></i></div>
+                            <div class="key-info">
+                                <div class="key-id" style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas ${statusIcon}" style="color: ${statusColor}; font-size: 0.85rem;"></i>
+                                    <span>${id}</span>
+                                </div>
+                                <div class="key-expiry"><i class="fas fa-calendar" style="margin-right: 4px;"></i>${key.expiry}</div>
+                                ${key.hwid ? `<div class="key-hwid"><i class="fas fa-microchip" style="margin-right: 4px;"></i>${key.hwid}</div>` : ''}
+                                <div style="font-size: 0.7rem; color: ${statusColor}; margin-top: 4px; font-weight: 600;"><i class="fas ${statusIcon}" style="margin-right: 4px;"></i>${statusText}</div>
+                            </div>
+                            <div class="key-card-icons">
+                                <button onclick="copyKeyToClipboard('${id}', event)" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: var(--white); padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; white-space: nowrap;"><i class="fas fa-copy" style="margin-right: 4px;"></i>Copy</button>
+                                <button onclick="editSingle('${id}', event)"><i class="fas fa-pen"></i></button>
+                                <button onclick="deleteSingle('${id}', event)"><i class="fas fa-trash"></i></button>
+                                ${key.hwid ? `<button onclick="unbindSingle('${id}', event)"><i class="fas fa-unlink"></i></button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html || '<div style="text-align: center; color: var(--text-dim); padding: 40px 20px;"><i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>No keys found</div>';
+        }
+
+        function toggleSelect(id) {
+            if(SELECTED.has(id)) SELECTED.delete(id);
+            else SELECTED.add(id);
+            renderKeys();
+            updateActionButtons();
+        }
+
+        function filterKeys() {
+            renderKeys();
+        }
+
+        function toggleSelectAll() {
+            const keys = Object.keys(DB.keys || {});
+            if(SELECTED.size === keys.length) SELECTED.clear();
+            else keys.forEach(k => SELECTED.add(k));
+            renderKeys();
+        }
+
+        function updateActionButtons() {
+            const size = SELECTED.size;
+            document.getElementById('count-e').innerText = size;
+            document.getElementById('count-d').innerText = size;
+            const btns = [document.getElementById('btn-edit'), document.getElementById('btn-del')];
+            btns.forEach(b => size > 0 ? b.classList.remove('disabled') : b.classList.add('disabled'));
+            document.getElementById('chk-all').className = `chk ${size > 0 && size === Object.keys(DB.keys || {}).length ? 'active' : ''}`;
+        }
+
+        async function sync() {
+            try {
+                const res = await fetch(CURRENT_URL + '/.json', { 
+                    method: 'PUT', 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors',
+                    credentials: 'omit',
+                    body: JSON.stringify(DB) 
+                });
+                
+                if(!res.ok) {
+                    const fallbackRes = await fetch(CURRENT_URL + '.json', {
+                        method: 'PUT',
+                        body: JSON.stringify(DB)
+                    });
+                    if(!fallbackRes.ok) throw new Error('Sync Failed: ' + fallbackRes.status);
+                }
+                
+                refreshUI();
+            } catch(e) {
+                console.error('Sync error:', e);
+                showToast('Sync error: ' + e.message, 'var(--danger)');
+            }
+        }
+
+        function getExpiryValue(dateId, lifeId) {
+            if(document.getElementById(lifeId).checked) return "lifetime";
+            const date = document.getElementById(dateId).value;
+            return date ? new Date(date).toLocaleDateString('en-US') : 'No Expiry';
+        }
+
+        function formatDateToPicker(expiry) {
+            if(expiry === 'lifetime' || expiry === 'No Expiry') return '';
+            try {
+                const date = new Date(expiry);
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            } catch {
+                return '';
+            }
+        }
+
+        function openBulkGen() {
+            document.getElementById('mb-amt').value = '10';
+            document.getElementById('mb-pre').value = 'MARADA_X-';
+            document.getElementById('mb-life').checked = false;
+            toggleDateInput('mb-date', false);
+            openModal('m-bulk-gen');
+        }
+
+        function generateBulk() {
+            const amt = parseInt(document.getElementById('mb-amt').value);
+            const pre = document.getElementById('mb-pre').value.trim();
+            
+            if(!pre) return showToast('Prefix required', 'var(--danger)');
+            if(amt < 1 || amt > 1000) return showToast('Between 1-1000', 'var(--warning)');
+            
+            const exp = getExpiryValue('mb-date', 'mb-life');
+            for(let i = 0; i < amt; i++) {
+                const id = pre + Math.random().toString(36).substr(2, 6).toUpperCase();
+                if(!DB.keys[id]) DB.keys[id] = { expiry: exp, hwid: "" };
+            }
+            sync();
+            closeModal('m-bulk-gen');
+            showToast(`Generated ${amt} keys`, 'var(--success)');
+        }
+
+        function openSingleModal() {
+            document.getElementById('ms-key').value = 'MARADA_X-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            document.getElementById('ms-date').value = '';
+            document.getElementById('ms-life').checked = false;
+            toggleDateInput('ms-date', false);
+            openModal('m-single-gen');
+        }
+
+        function generateSingle() {
+            const id = document.getElementById('ms-key').value.trim();
+            if(!id) return showToast('Key ID required', 'var(--danger)');
+            if(DB.keys[id]) return showToast('Key already exists', 'var(--warning)');
+            
+            DB.keys[id] = { expiry: getExpiryValue('ms-date', 'ms-life'), hwid: "" };
+            sync();
+            closeModal('m-single-gen');
+            showToast('Key Created', 'var(--success)');
+        }
+
+        function openBulkEdit() {
+            if(SELECTED.size === 0) return;
+            EDIT_TARGET = null;
+            document.getElementById('edit-target-text').innerHTML = `<i class="fas fa-edit" style="margin-right: 10px; color: var(--primary);"></i>Editing <b>${SELECTED.size}</b> selected keys`;
+            document.getElementById('edit-hwid-container').style.display = 'none';
+            openModal('m-edit-key');
+        }
+
+        function editSingle(id, e) {
+            e.stopPropagation();
+            EDIT_TARGET = id;
+            document.getElementById('edit-target-text').innerHTML = `<i class="fas fa-edit" style="margin-right: 10px; color: var(--primary);"></i>Editing: <b style="color:var(--primary); font-family:var(--font-code);">${id}</b>`;
+            
+            const isLife = DB.keys[id].expiry === 'lifetime';
+            document.getElementById('me-life').checked = isLife;
+            document.getElementById('me-date').value = formatDateToPicker(DB.keys[id].expiry);
+            toggleDateInput('me-date', isLife);
+            
+            document.getElementById('edit-hwid-container').style.display = 'block';
+            document.getElementById('me-hwid').value = DB.keys[id].hwid || '';
+
+            openModal('m-edit-key');
+        }
+
+        function saveEdit() {
+            const exp = getExpiryValue('me-date', 'me-life');
+            
+            if(EDIT_TARGET) {
+                DB.keys[EDIT_TARGET].expiry = exp;
+                DB.keys[EDIT_TARGET].hwid = document.getElementById('me-hwid').value.trim();
+            } else {
+                SELECTED.forEach(id => { DB.keys[id].expiry = exp; });
+                SELECTED.clear();
+            }
+            sync();
+            closeModal('m-edit-key');
+            showToast('Changes Saved', 'var(--success)');
+        }
+
+        function deleteSelected() {
+            if(!confirm(`Delete ${SELECTED.size} keys?`)) return;
+            SELECTED.forEach(id => delete DB.keys[id]);
+            SELECTED.clear();
+            sync();
+            showToast('Deleted', 'var(--danger)');
+        }
+
+        function deleteSingle(id, e) {
+            e.stopPropagation();
+            if(!confirm(`Delete key: ${id}?`)) return;
+            delete DB.keys[id];
+            SELECTED.delete(id);
+            sync();
+            showToast('Deleted', 'var(--danger)');
+        }
+
+        function unbindSingle(id, e) {
+            e.stopPropagation();
+            if(!DB.keys[id].hwid) return showToast('Already Unbound', 'var(--warning)');
+            DB.keys[id].hwid = '';
+            sync();
+            showToast('Unbound', 'var(--success)');
+        }
+
+        function loadConfigUI() {
+            document.getElementById('cfg-title').value = DB.dialog_config?.title || '';
+            document.getElementById('cfg-subtitle').value = DB.dialog_config?.subtitle || '';
+            document.getElementById('cfg-url').value = DB.dialog_config?.admin_url || '';
+        }
+
+        function saveConfig() {
+            DB.dialog_config = {
+                title: document.getElementById('cfg-title').value,
+                subtitle: document.getElementById('cfg-subtitle').value,
+                admin_url: document.getElementById('cfg-url').value
+            };
+            sync();
+            showToast('Settings Saved!', 'var(--success)');
+        }
+
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function toggleDateInput(id, isLife) {
+            const group = id.replace('date', 'date-group');
+            document.getElementById(group).style.display = isLife ? 'none' : 'block';
+        }
+
+        document.getElementById('ms-life').addEventListener('change', (e) => toggleDateInput('ms-date', e.target.checked));
+        document.getElementById('mb-life').addEventListener('change', (e) => toggleDateInput('mb-date', e.target.checked));
+        document.getElementById('me-life').addEventListener('change', (e) => toggleDateInput('me-date', e.target.checked));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedDatabases();
+            document.querySelector('.nav-item').classList.add('active');
+            
+            const saved = getSavedDatabases();
+            if(saved.length === 0) {
+                setTimeout(() => {
+                    openAddDatabaseModal();
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
